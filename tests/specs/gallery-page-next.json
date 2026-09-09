@@ -5,6 +5,10 @@
       {
         "expect": [
           {
+            "method": "answerCallbackQuery",
+            "payload": { "text": "Loading images…" }
+          },
+          {
             "method": "editMessageText",
             "payload": {
               "text": "Photography has no images yet — tap Browse categories to explore another collection."
