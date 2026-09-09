@@ -1,0 +1,20 @@
+[
+  {
+    "name": "View details",
+    "steps": [
+      {
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Open full item view with caption, metadata and share button"
+            }
+          }
+        ],
+        "send": {
+          "callback": "item:details:\u003citem_id\u003e"
+        }
+      }
+    ]
+  }
+]
