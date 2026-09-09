@@ -5,9 +5,9 @@
       {
         "expect": [
           {
-            "method": "sendMessage",
+            "method": "editMessageText",
             "payload": {
-              "text": "Open the inline category picker"
+              "text": "Pick a collection to explore."
             }
           }
         ],

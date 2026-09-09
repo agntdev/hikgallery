@@ -5,9 +5,9 @@
       {
         "expect": [
           {
-            "method": "sendMessage",
+            "method": "editMessageText",
             "payload": {
-              "text": "Load next page of items in current category"
+              "text": "Photography has no images yet — tap Browse categories to explore another collection."
             }
           }
         ],

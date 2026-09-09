@@ -7,12 +7,12 @@
           {
             "method": "sendMessage",
             "payload": {
-              "text": "Open full item view with caption, metadata and share button"
+              "text": "That item isn’t available anymore. Browse the gallery to find something new."
             }
           }
         ],
         "send": {
-          "callback": "item:details:\u003citem_id\u003e"
+          "callback": "item:details:missing"
         }
       }
     ]

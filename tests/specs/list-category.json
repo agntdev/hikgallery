@@ -7,7 +7,7 @@
           {
             "method": "sendMessage",
             "payload": {
-              "text": "Admin-only: list items, optionally filtered by category"
+              "text": "Owner access isn't set up yet."
             }
           }
         ],
