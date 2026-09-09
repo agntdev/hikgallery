@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Browse categories",
+    "steps": [
+      {
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Open the inline category picker"
+            }
+          }
+        ],
+        "send": {
+          "callback": "browse:categories"
+        }
+      }
+    ]
+  }
+]
