@@ -1,17 +1,9 @@
 import { Composer } from "grammy";
-
-// SCAFFOLD — generated from the bot blueprint BEFORE the agent runs.
-// Keep a LIVE registration (.command / .callbackQuery / …) so this feature is
-// never an empty stub. Replace the reply body with real logic + copy; if you
-// change the user-facing text, update tests/specs to match EXACTLY.
-// Do NOT rewrite src/bot.ts — buildBot() already auto-loads this module.
-// Menu: wire this into /start via registerMainMenuItem({ label: "Next page", data: "gallery:page_next" }) if the toolkit exposes it.
-
-const composer = new Composer();
-
-composer.callbackQuery("gallery:page_next", async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply("Load next page of items in current category");
-});
-
+import type { Ctx } from "../bot.js";
+import { searchItems, showGallery } from "../gallery.js";
+const composer = new Composer<Ctx>();
+async function page(ctx: Ctx, index: number) { const term = ctx.session.searchTerm; await showGallery(ctx, ctx.session.currentCategoryId ?? "photography", index, true, term ? await searchItems(ctx, term) : undefined); }
+composer.callbackQuery("gallery:page_next", async (ctx) => { await ctx.answerCallbackQuery(); await page(ctx, (ctx.session.pageIndex ?? 0) + 1); });
+composer.callbackQuery("gallery:page_prev", async (ctx) => { await ctx.answerCallbackQuery(); await page(ctx, (ctx.session.pageIndex ?? 0) - 1); });
+composer.callbackQuery(/^gallery:(next|prev):(\d+)$/, async (ctx) => { await ctx.answerCallbackQuery(); await page(ctx, Number(ctx.match[2])); });
 export default composer;

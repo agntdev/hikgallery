@@ -1,17 +1,9 @@
 import { Composer } from "grammy";
-
-// SCAFFOLD — generated from the bot blueprint BEFORE the agent runs.
-// Keep a LIVE registration (.command / .callbackQuery / …) so this feature is
-// never an empty stub. Replace the reply body with real logic + copy; if you
-// change the user-facing text, update tests/specs to match EXACTLY.
-// Do NOT rewrite src/bot.ts — buildBot() already auto-loads this module.
-// Menu: wire this into /start via registerMainMenuItem({ label: "Browse categories", data: "browse:categories" }) if the toolkit exposes it.
-
-const composer = new Composer();
-
-composer.callbackQuery("browse:categories", async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply("Open the inline category picker");
-});
-
+import type { Ctx } from "../bot.js";
+import { categories, showGallery } from "../gallery.js";
+import { inlineButton, inlineKeyboard, registerMainMenuItem } from "../toolkit/index.js";
+registerMainMenuItem({ label: "Browse gallery", data: "browse:categories", order: 10 });
+const composer = new Composer<Ctx>();
+composer.callbackQuery("browse:categories", async (ctx) => { await ctx.answerCallbackQuery(); const all = await categories(ctx); await ctx.editMessageText("Pick a collection to explore.", { reply_markup: inlineKeyboard([...all.map((entry) => [inlineButton(entry.name, `category:${entry.id}`)]), [inlineButton("Main menu", "menu:main")]]) }); });
+composer.callbackQuery(/^category:(.+)$/, async (ctx) => { await ctx.answerCallbackQuery(); await showGallery(ctx, ctx.match[1], 0, true); });
 export default composer;

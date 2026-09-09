@@ -1,24 +1,19 @@
 import { Composer } from "grammy";
 import type { Ctx } from "../bot.js";
-import { mainMenuKeyboard } from "../toolkit/index.js";
+import { featuredCategory, findItem, showGallery } from "../gallery.js";
 
-// The /start handler renders the bot's MAIN MENU — the primary way users operate
-// a button-first bot. A feature adds its own button by calling
-// `registerMainMenuItem(...)` in its own `src/handlers/<slug>.ts`; this handler
-// renders whatever is registered (plus a Help button), so you do NOT edit this
-// file to add a feature. Send ONE message — no placeholder line above the menu.
 const composer = new Composer<Ctx>();
-
-const WELCOME = "👋 Welcome! Tap a button below to get started.";
-
 composer.command("start", async (ctx) => {
-  await ctx.reply(WELCOME, { reply_markup: mainMenuKeyboard() });
+  const argument = ctx.match?.trim();
+  if (argument?.startsWith("item_")) {
+    const item = await findItem(ctx, argument.slice(5));
+    if (!item) { await ctx.reply("That gallery item isn’t available anymore. Tap /start to browse what’s here now."); return; }
+    await ctx.replyWithPhoto(item.telegramFileId, { caption: `${item.title}\n\n${item.caption}` });
+    return;
+  }
+  const featured = await featuredCategory(ctx);
+  await ctx.reply(`Welcome to the gallery. Here’s ${featured.name} to start.`, { reply_markup: { inline_keyboard: [[{ text: "Browse categories", callback_data: "browse:categories" }], [{ text: "Search", callback_data: "search:tip" }]] } });
+  await showGallery(ctx, featured.id);
 });
-
-// "Back to menu" — re-render the main menu in place from any sub-view.
-composer.callbackQuery("menu:main", async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.editMessageText(WELCOME, { reply_markup: mainMenuKeyboard() });
-});
-
+composer.callbackQuery("menu:main", async (ctx) => { await ctx.answerCallbackQuery(); const featured = await featuredCategory(ctx); await showGallery(ctx, featured.id, 0, true); });
 export default composer;

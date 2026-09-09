@@ -7,7 +7,7 @@
           {
             "method": "sendMessage",
             "payload": {
-              "text": "Keyword search across item titles and tags; returns result list with same pagination-style controls"
+              "text": "Tell me what to look for, like /search sunset."
             }
           }
         ],

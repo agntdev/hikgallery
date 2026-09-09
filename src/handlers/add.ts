@@ -1,15 +1,17 @@
 import { Composer } from "grammy";
-
-// SCAFFOLD — generated from the bot blueprint BEFORE the agent runs.
-// Keep a LIVE registration (.command / .callbackQuery / …) so this feature is
-// never an empty stub. Replace the reply body with real logic + copy; if you
-// change the user-facing text, update tests/specs to match EXACTLY.
-// Do NOT rewrite src/bot.ts — buildBot() already auto-loads this module.
-
-const composer = new Composer();
-
-composer.command("add", async (ctx) => {
-  await ctx.reply("Admin-only: start add-item wizard (upload image, enter title, pick/enter category, caption, optional metadata)");
+import type { Ctx } from "../bot.js";
+import { categories, clearDraft, makeId, now, parseMetadata, recordAdminAction, saveCategory, saveItem } from "../gallery.js";
+import { adminChatId, inlineButton, inlineKeyboard, requireOwner } from "../toolkit/index.js";
+const composer = new Composer<Ctx>();
+async function owner(ctx: Ctx) { if (ctx.chat?.type !== "private") { await ctx.reply("Gallery management is available in your private chat with me."); return false; } return requireOwner(ctx); }
+function ask(ctx: Ctx, text: string, placeholder: string) { return ctx.reply(text, { reply_markup: { force_reply: true, input_field_placeholder: placeholder } }); }
+composer.command("add", async (ctx) => { if (!(await owner(ctx))) return; clearDraft(ctx); ctx.session.step = "add_photo"; await ask(ctx, "Send the image you’d like to add. Keep it under 10 MB.", "Upload an image"); });
+composer.on("message:photo", async (ctx, next) => { if (ctx.session.step !== "add_photo") return next(); if (!(await owner(ctx))) return; const photo = ctx.message.photo.at(-1); if (!photo?.file_id) { await ctx.reply("I couldn’t use that image. Try uploading it again."); return; } if (photo.file_size && photo.file_size > 10 * 1024 * 1024) { await ctx.reply("That image is too large for a gallery photo. Send one under 10 MB."); return; } ctx.session.draftFileId = photo.file_id; ctx.session.draftSize = photo.file_size; ctx.session.step = "add_title"; await ask(ctx, "Lovely. What should this image be called?", "Type a title"); });
+composer.on("message:text", async (ctx, next) => { const step = ctx.session.step; if (!step || step === "add_photo") return next(); if (!(await owner(ctx))) return; const text = ctx.message.text.trim(); if (!text) { await ctx.reply("Send a little text so we can keep going."); return; }
+  if (step === "add_title") { ctx.session.draftTitle = text.slice(0, 120); ctx.session.step = "add_category"; const all = await categories(ctx); await ctx.reply("Choose a collection, or add a new one.", { reply_markup: inlineKeyboard([...all.map((entry) => [inlineButton(entry.name, `add:category:${entry.id}`)]), [inlineButton("Add new category", "add:category:new")]]) }); return; }
+  if (step === "add_new_category") { const entry = await saveCategory(ctx, text.slice(0, 60)); ctx.session.draftCategoryId = entry.id; ctx.session.step = "add_caption"; await ask(ctx, "Nice choice. Add a short caption for the image.", "Type a caption"); return; }
+  if (step === "add_caption") { ctx.session.draftCaption = text.slice(0, 900); ctx.session.step = "add_metadata"; await ask(ctx, "Add optional details as artist: Name; date: Year; tags: one, two — or send - to skip.", "Add details or -"); return; }
+  if (step === "add_metadata") { if (!ctx.session.draftFileId || !ctx.session.draftTitle || !ctx.session.draftCategoryId || !ctx.session.draftCaption) { clearDraft(ctx); await ctx.reply("That draft was incomplete, so let’s start again with /add."); return; } try { const item = { id: makeId(), telegramFileId: ctx.session.draftFileId, title: ctx.session.draftTitle, categoryId: ctx.session.draftCategoryId, caption: ctx.session.draftCaption, metadata: text === "-" ? { tags: [] } : parseMetadata(text), createdByAdmin: String(ctx.from.id), createdAt: now().toISOString() }; await saveItem(ctx, item); await recordAdminAction(ctx, "add", item.id); clearDraft(ctx); await ctx.reply(`Item saved — ID: ${item.id}`); const destination = adminChatId(ctx as Ctx & { env?: Record<string, unknown> }); if (destination && destination !== String(ctx.chat?.id)) await ctx.api.sendMessage(destination, `Item saved — ID: ${item.id}`).catch(() => undefined); } catch { await ctx.reply("I couldn’t save that image. Check the gallery storage and try /add again."); } }
 });
-
+composer.callbackQuery(/^add:category:(.+)$/, async (ctx) => { await ctx.answerCallbackQuery(); if (!(await owner(ctx)) || ctx.session.step !== "add_category") return; if (ctx.match[1] === "new") { ctx.session.step = "add_new_category"; await ask(ctx, "What should the new collection be called?", "Type a category name"); return; } ctx.session.draftCategoryId = ctx.match[1]; ctx.session.step = "add_caption"; await ask(ctx, "Add a short caption for the image.", "Type a caption"); });
 export default composer;

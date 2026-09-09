@@ -7,7 +7,7 @@
           {
             "method": "sendMessage",
             "payload": {
-              "text": "Admin-only: start add-item wizard (upload image, enter title, pick/enter category, caption, optional metadata)"
+              "text": "Owner access isn't set up yet."
             }
           }
         ],

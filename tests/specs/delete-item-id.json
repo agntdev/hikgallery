@@ -7,7 +7,7 @@
           {
             "method": "sendMessage",
             "payload": {
-              "text": "Admin-only: delete an item by stable item ID"
+              "text": "Owner access isn't set up yet."
             }
           }
         ],
